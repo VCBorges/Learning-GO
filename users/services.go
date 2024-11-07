@@ -20,3 +20,21 @@ func CreateUser(
 	}
 	return user, db.Create(user).Error
 }
+
+
+
+func GetUserByEmail(
+	email string,
+	db *gorm.DB,
+) (User, error) {
+	var user User
+
+	err := db.Where("email = ?", email).First(&user).Error 
+	if err != nil {
+		return User{}, err
+	}
+	return user, nil
+}
+
+
+

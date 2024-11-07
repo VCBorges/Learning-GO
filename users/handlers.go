@@ -74,7 +74,13 @@ func CreateListUsersHandler(db *gorm.DB, validate *validator.Validate) http.Hand
 			for _, error := range err.(validator.ValidationErrors) {
 				fmt.Println(error.Field())
 			}
-			w.WriteHeader(http.StatusBadRequest)
+			ErrorJSONResponse(w, nil)
+			return
+		}
+
+		_, err = GetUserByEmail(data.Email, db)
+		if err == nil {
+			fmt.Println("User already exists")
 			ErrorJSONResponse(w, nil)
 			return
 		}
