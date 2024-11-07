@@ -10,16 +10,16 @@ import (
 )
 
 type ErrorOutput struct {
-	message string
-	errors  interface{}
+	Message string
+	Errors  interface{}
 }
 
 func ValidateRequest(
-	request *http.Request,
+	r *http.Request,
 	validate *validator.Validate,
 	data interface{},
 ) error {
-	err := json.NewDecoder(request.Body).Decode(&data)
+	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
 		fmt.Println("Error while decoding the request")
 		return err
@@ -34,19 +34,37 @@ func ValidateRequest(
 	return nil
 }
 
-func WriteResponse(
-	writer *http.ResponseWriter, 
+func WriteJSONResponse(
+	w http.ResponseWriter,
 	response interface{},
 	status int,
 ) {
-	// writer.WriteHeader(http.StatusBadRequest)
-	(*writer).WriteHeader(status)
-	json.NewEncoder(*writer).Encode(response)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(status)
+
+	if response == nil {
+		response = make(map[string]string)
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+func SuccessJSONResponse(
+	w http.ResponseWriter,
+	response interface{},
+) {
+	WriteJSONResponse(w, &response, http.StatusOK)
+}
+
+func ErrorJSONResponse(
+	w http.ResponseWriter,
+	err interface{},
+) {
+	WriteJSONResponse(w, err, http.StatusBadRequest)
 }
 
 func CreateListUsersHandler(db *gorm.DB, validate *validator.Validate) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
 		defer r.Body.Close()
 
 		var data UserCreateInput
@@ -57,12 +75,14 @@ func CreateListUsersHandler(db *gorm.DB, validate *validator.Validate) http.Hand
 				fmt.Println(error.Field())
 			}
 			w.WriteHeader(http.StatusBadRequest)
+			ErrorJSONResponse(w, nil)
 			return
 		}
 
 		user, err := CreateUser(db, &data)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			fmt.Println("Error while creating user")
+			ErrorJSONResponse(w, nil)
 			return
 		}
 
@@ -71,10 +91,6 @@ func CreateListUsersHandler(db *gorm.DB, validate *validator.Validate) http.Hand
 			FirstName: user.FirstName,
 		}
 		fmt.Println(response)
-		WriteResponse(&w, &response, http.StatusOK)
+		SuccessJSONResponse(w, &response)
 	}
 }
-
-// func CreateListUserHandler(w http.ResponseWriter, r *http.Request) {
-// 	// Handler logic here
-// }
