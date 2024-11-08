@@ -45,6 +45,7 @@ func WriteJSONResponse(
 	if response == nil {
 		response = make(map[string]string)
 	}
+	// TODO: handle more cases where the type of response is not a pointer to a struct
 
 	json.NewEncoder(w).Encode(response)
 }
