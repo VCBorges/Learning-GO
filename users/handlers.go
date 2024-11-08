@@ -13,6 +13,11 @@ type ErrorOutput struct {
 	Errors []FieldError `json:"errors"`
 }
 
+func (e *ErrorOutput) Add(err FieldError){
+	e.Errors = append(e.Errors, err)
+}
+
+
 type FieldError struct {
 	Field   string      `json:"field"`
 	Message interface{} `json:"message"`
@@ -96,7 +101,9 @@ func CreateListUsersHandler(db *gorm.DB, validate *validator.Validate) http.Hand
 				Field:   "email",
 				Message: "A user with this email already exists",
 			}
-			ErrorJSONResponse(w, &ErrorOutput{Errors: []FieldError{fieldError}})
+			errorOutput := ErrorOutput{}
+			errorOutput.Add(fieldError)
+			ErrorJSONResponse(w, &errorOutput)
 			return
 		}
 
