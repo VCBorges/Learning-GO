@@ -10,8 +10,12 @@ import (
 )
 
 type ErrorOutput struct {
-	Message string
-	Errors  interface{}
+	Errors []FieldError `json:"errors"`
+}
+
+type FieldError struct {
+	Field   string      `json:"field"`
+	Message interface{} `json:"message"`
 }
 
 func ValidateRequest(
@@ -72,17 +76,27 @@ func CreateListUsersHandler(db *gorm.DB, validate *validator.Validate) http.Hand
 		err := ValidateRequest(r, validate, &data)
 		if err != nil {
 			// TODO: make a switch to check the type of the error
+			var fieldErrors []FieldError
 			for _, error := range err.(validator.ValidationErrors) {
-				fmt.Println(error.Field())
+				fieldErrors = append(
+					fieldErrors,
+					FieldError{
+						Field:   error.Field(),
+						Message: error.Tag(),
+					},
+				)
 			}
-			ErrorJSONResponse(w, nil)
+			ErrorJSONResponse(w, &ErrorOutput{Errors: fieldErrors})
 			return
 		}
 
 		_, err = GetUserByEmail(data.Email, db)
 		if err == nil {
-			fmt.Println("User already exists")
-			ErrorJSONResponse(w, nil)
+			fieldError := FieldError{
+				Field:   "email",
+				Message: "A user with this email already exists",
+			}
+			ErrorJSONResponse(w, &ErrorOutput{Errors: []FieldError{fieldError}})
 			return
 		}
 
