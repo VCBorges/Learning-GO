@@ -9,34 +9,42 @@ import (
 	"gorm.io/gorm"
 )
 
-type ErrorOutput struct {
+type ErrorResponse struct {
 	Errors []FieldError `json:"errors"`
 }
 
-func (e *ErrorOutput) Add(err FieldError){
+func (e *ErrorResponse) Add(err FieldError) {
 	e.Errors = append(e.Errors, err)
 }
 
-
 type FieldError struct {
-	Field   string      `json:"field"`
-	Message interface{} `json:"message"`
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
-func ValidateRequest(
+func ValidateBody(
 	r *http.Request,
 	validate *validator.Validate,
-	data interface{},
+	schema interface{},
+	errorResponse *ErrorResponse,
 ) error {
-	err := json.NewDecoder(r.Body).Decode(&data)
+	err := json.NewDecoder(r.Body).Decode(&schema)
 	if err != nil {
 		fmt.Println("Error while decoding the request")
 		return err
 	}
 
-	err = validate.Struct(data)
+	err = validate.Struct(schema)
 	if err != nil {
 		fmt.Println("Error while validating the request")
+		for _, error := range err.(validator.ValidationErrors) {
+			errorResponse.Add(
+				FieldError{
+					Field:   error.Field(),
+					Message: error.Tag(),
+				},
+			)
+		}
 		return err
 	}
 
@@ -48,7 +56,10 @@ func WriteJSONResponse(
 	response interface{},
 	status int,
 ) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.Header().Set(
+		"Content-Type",
+		"application/json; charset=UTF-8",
+	)
 	w.WriteHeader(status)
 
 	if response == nil {
@@ -76,34 +87,24 @@ func ErrorJSONResponse(
 func CreateListUsersHandler(db *gorm.DB, validate *validator.Validate) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
-
+		errors := ErrorResponse{}
 		var data UserCreateInput
-		err := ValidateRequest(r, validate, &data)
+		err := ValidateBody(r, validate, &data, &errors)
 		if err != nil {
 			// TODO: make a switch to check the type of the error
-			var fieldErrors []FieldError
-			for _, error := range err.(validator.ValidationErrors) {
-				fieldErrors = append(
-					fieldErrors,
-					FieldError{
-						Field:   error.Field(),
-						Message: error.Tag(),
-					},
-				)
-			}
-			ErrorJSONResponse(w, &ErrorOutput{Errors: fieldErrors})
+			ErrorJSONResponse(w, errors)
 			return
 		}
 
 		_, err = GetUserByEmail(data.Email, db)
 		if err == nil {
-			fieldError := FieldError{
-				Field:   "email",
-				Message: "A user with this email already exists",
-			}
-			errorOutput := ErrorOutput{}
-			errorOutput.Add(fieldError)
-			ErrorJSONResponse(w, &errorOutput)
+			errors.Add(
+				FieldError{
+					Field:   "email",
+					Message: "A user with this email already exists",
+				},
+			)
+			ErrorJSONResponse(w, &errors)
 			return
 		}
 

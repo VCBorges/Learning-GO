@@ -10,7 +10,7 @@ import (
 func CreateUser(
 	db *gorm.DB,
 	data *UserCreateInput,
-) (User, error) {
+) (*User, error) {
 	user := User{
 		Id:        uuid.New(),
 		Email:     data.Email,
@@ -18,18 +18,34 @@ func CreateUser(
 		Password:  data.Password,
 		CreatedAt: time.Now(),
 	}
-	return user, db.Create(user).Error
+	return &user, db.Create(user).Error
 }
 
 func GetUserByEmail(
 	email string,
 	db *gorm.DB,
-) (User, error) {
+) (*User, error) {
 	var user User
 
 	err := db.Where("email = ?", email).First(&user).Error
 	if err != nil {
-		return User{}, err
+		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }
+
+
+
+func GetUserById(
+	id uuid.UUID,
+	db *gorm.DB,
+) (*User, error) {
+	var user User
+
+	err := db.Where("id = ?", id.String()).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
