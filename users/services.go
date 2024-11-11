@@ -1,6 +1,7 @@
 package users
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +12,10 @@ func CreateUser(
 	db *gorm.DB,
 	data *UserCreateInput,
 ) (*User, error) {
+	_, err := GetUserByEmail(data.Email, db)
+	if err == nil {
+		return &User{}, errors.New("email in use")
+	}
 	user := User{
 		Id:        uuid.New(),
 		Email:     data.Email,

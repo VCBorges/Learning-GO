@@ -1,7 +1,7 @@
 package database
 
 import (
-	"project_name/models"
+	"project_name/content"
 	"project_name/users"
 
 	"gorm.io/driver/sqlite"
@@ -16,8 +16,9 @@ func InitDB() (*gorm.DB, error) {
 
 	db.AutoMigrate(
 		users.User{},
-		models.Question{},
-		models.Answer{},
+		content.Question{},
+		content.Answer{},
+		content.Tag{},
 	)
 	return db, nil
 }

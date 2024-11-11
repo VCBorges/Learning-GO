@@ -26,7 +26,7 @@ func main() {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	http.NewServeMux()
+	// http.NewServeMux()
 	http.HandleFunc("/users", users.CreateListUsersHandler(db, validate))
 	// http.HandleFunc("/goodbye", goodbyeHandler)
 	err = http.ListenAndServe(":8080", nil)
