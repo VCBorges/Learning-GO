@@ -27,3 +27,4 @@ type Tag struct {
 	QuestionId uuid.UUID `gorm:"column:question_id;type:varchar(100);not null"`
 	Question   Question  `gorm:"foreignKey:QuestionId;references:Id"`
 }
+

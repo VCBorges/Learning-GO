@@ -1,8 +1,10 @@
 package content
 
 import (
+	"errors"
 	"project_name/core"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -29,8 +31,8 @@ func CreateQuestion(
 
 	for _, tagDTO := range dto.Tags {
 		tag := Tag{
-			BaseModel:  core.NewBaseModel(),
-			Name: tagDTO.Name,
+			BaseModel: core.NewBaseModel(),
+			Name:      tagDTO.Name,
 		}
 		question.Tags = append(question.Tags, tag)
 	}
@@ -40,4 +42,37 @@ func CreateQuestion(
 	}
 
 	return &question, nil
+}
+
+func FindQuestionById(
+	questionId uuid.UUID,
+	db *gorm.DB,
+) (*Question, error) {
+	var question Question
+	err := db.First(&question, questionId).Error
+	return &question, err
+}
+
+func FindAnswerById(
+	answerId uuid.UUID,
+	db *gorm.DB,
+) (*Answer, error) {
+	var answer Answer
+	err := db.First(&answer, answerId).Error
+	return &answer, err
+}
+
+func ChooseQuestionAnswer(
+	answerId uuid.UUID,
+	questionId uuid.UUID,
+	db *gorm.DB,
+) error {
+	var answer Answer
+
+	err := db.Where("id = ?, question_id = ?", answerId, questionId).First(&answer).Error
+	if err != nil {
+		return errors.New("answer does not exists")
+	}
+
+	return err
 }

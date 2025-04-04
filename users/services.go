@@ -16,6 +16,10 @@ func CreateUser(
 	if err == nil {
 		return &User{}, errors.New("email in use")
 	}
+
+	if data.Email == "" {
+		return &User{}, errors.New("user email cannot be empty")
+	}
 	user := User{
 		Id:        uuid.New(),
 		Email:     data.Email,
@@ -39,8 +43,6 @@ func GetUserByEmail(
 	return &user, nil
 }
 
-
-
 func GetUserById(
 	id uuid.UUID,
 	db *gorm.DB,
@@ -53,4 +55,3 @@ func GetUserById(
 	}
 	return &user, nil
 }
-
